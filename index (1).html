@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Phish or Legit</title>
+</head>
+<body>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: one narrow terminal-style column over a faint falling-code backdrop, one message at a time. */
+:root{
+  --bg:#040906; --card:rgba(7,20,12,.88); --card-solid:#07140c; --line:#1b4a2e; --fg:#d6f5e0; --muted:#7fa890;
+  --green:#2dff73; --green-soft:rgba(45,255,115,.12); --orange:#ff8a1f; --orange-soft:rgba(255,138,31,.14);
+  --head:'Rajdhani',Arial,sans-serif; --mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:15px;line-height:1.6;position:relative;
+  padding-block:36px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+   radial-gradient(900px 500px at 15% -10%,rgba(45,255,115,.18),transparent 60%),
+   radial-gradient(700px 500px at 100% 100%,rgba(255,138,31,.10),transparent 60%),
+   url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='97' viewBox='0 0 56 97'%3E%3Cpath d='M28 2 54 17v30L28 62 2 47V17zM28 62v35M54 47l2 1M2 47l-2 1' fill='none' stroke='%232dff73' stroke-opacity='.07' stroke-width='1'/%3E%3C/svg%3E");}
+#rain{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;opacity:.32}
+main{position:relative;z-index:1;max-width:660px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+.eyebrow{font-size:13px;color:var(--orange);letter-spacing:.08em;margin:0 0 6px}
+.eyebrow::after{content:"_";animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+h1{font-family:var(--head);font-weight:700;font-size:clamp(40px,10vw,60px);line-height:1;margin:0;text-transform:uppercase;letter-spacing:.02em;color:var(--green);text-shadow:0 0 22px rgba(45,255,115,.45);text-wrap:balance}
+.sub{color:var(--muted);margin:10px 0 0}
+.bar{display:flex;align-items:center;gap:12px;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.track{flex:1;height:5px;background:var(--line);border-radius:3px;overflow:hidden}
+.fill{height:100%;background:var(--green);box-shadow:0 0 10px var(--green);width:0;transition:width .3s}
+.ctx{display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px dashed var(--line);border-radius:10px;background:rgba(45,255,115,.04)}
+.ctx .tag{font-size:12px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--green)}
+.ctx p{margin:0;color:var(--muted);font-size:14px}
+.msg{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:12px;min-width:0;backdrop-filter:blur(2px)}
+.ch{font-size:12px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--orange)}
+.row{display:flex;gap:12px;min-width:0}
+.row b{width:70px;flex:none;font-weight:400;color:var(--muted);font-size:13px}
+.row span{min-width:0;overflow-wrap:anywhere;font-weight:500}
+hr{border:0;border-top:1px dashed var(--line);width:100%;margin:0}
+.body{margin:0;overflow-wrap:anywhere}
+.pill{align-self:flex-start;background:var(--green-soft);border:1px solid var(--line);border-radius:6px;padding:6px 12px;font-size:14px}
+.sticker{border:2px dashed var(--muted);border-radius:8px;padding:16px;text-align:center;color:var(--muted)}
+.sticker strong{display:block;color:var(--fg);font-family:var(--head);font-size:22px;letter-spacing:.04em;margin-bottom:4px}
+mark{background:none;color:inherit;border-radius:3px}
+.shown mark{background:var(--orange-soft);color:#ffd9b0;padding:0 3px;box-shadow:0 0 0 1px var(--orange)}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+button{font:inherit;font-family:var(--head);font-size:20px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;border-radius:8px;padding:12px 16px;border:2px solid var(--green);background:transparent;color:var(--green);cursor:pointer}
+button:hover:not(:disabled){background:var(--green);color:#03120a;box-shadow:0 0 18px rgba(45,255,115,.5)}
+button:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
+button:disabled{opacity:.4;cursor:default}
+.btns button.picked{opacity:1;background:var(--green);color:#03120a}
+.result{border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:10px}
+.result.ok{background:var(--green-soft);border:1px solid var(--green)}
+.result.bad{background:var(--orange-soft);border:1px solid var(--orange)}
+.result h2{margin:0;font-family:var(--head);font-weight:700;font-size:26px;line-height:1.15;letter-spacing:.02em}
+.result.ok h2{color:var(--green)} .result.bad h2{color:var(--orange)}
+.result p{margin:0}
+.result ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
+.next{align-self:flex-start;padding-inline:24px;border-color:var(--orange);color:var(--orange)}
+.next:hover:not(:disabled){background:var(--orange);color:#1a0d00;box-shadow:0 0 18px rgba(255,138,31,.5)}
+.end{background:var(--card);border:1px solid var(--green);border-radius:10px;padding:28px;display:flex;flex-direction:column;gap:12px;box-shadow:0 0 30px rgba(45,255,115,.15)}
+.end .score{font-family:var(--head);font-weight:700;font-size:64px;line-height:1;color:var(--green)}
+.end p{margin:0}
+.end .line{font-family:var(--head);font-weight:600;font-size:26px;line-height:1.2;color:var(--orange)}
+.end button{align-self:flex-start}
+.foot{font-size:12px;color:var(--muted);margin:0}
+[hidden]{display:none!important}
+@media (prefers-reduced-motion:reduce){.fill{transition:none}.eyebrow::after{animation:none}}
+</style>
+
+<canvas id="rain" aria-hidden="true"></canvas>
+<main>
+  <header>
+    <p class="eyebrow">&gt; phish_or_legit --rounds 8</p>
+    <h1>Phish or Legit?</h1>
+    <p class="sub">Eight random messages from a bank of 100. Decide which are scams. Every example is made up; no real company or person is shown.</p>
+  </header>
+
+  <div id="game">
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <div class="bar"><span id="count">1 / 8</span><div class="track"><div class="fill" id="fill"></div></div><span id="score">0 correct</span></div>
+      <div class="ctx" id="ctx"></div>
+      <div class="msg" id="msg"></div>
+      <div class="btns" id="btns">
+        <button id="bPhish" type="button">Phish</button>
+        <button id="bLegit" type="button">Legit</button>
+      </div>
+      <div class="result" id="result" hidden></div>
+      <button class="next" id="next" type="button" hidden>Next message</button>
+    </div>
+  </div>
+
+  <section class="end" id="end" hidden>
+    <p class="ch">Your result</p>
+    <div class="score" id="final"></div>
+    <p id="verdict"></p>
+    <p class="line">People will always click. Good security assumes they will.</p>
+    <p>Even if you spotted every one, a rushed person on a busy day will miss one. That is why a business needs layers: email filtering, endpoint protection, multi-factor login, 24/7 monitoring and backups.</p>
+    <button id="again" type="button">Play again</button>
+  </section>
+
+  <p class="foot" id="seen"></p>
+</main>
+
+<script>
+var BANK = [];
+function P(ch, from, subject, body, title) { BANK.push({ a: 'phish', ch: ch, from: from, subject: subject, body: body, title: title, flags: Array.prototype.slice.call(arguments, 5) }); }
+function L(ch, from, subject, body, title) { BANK.push({ a: 'legit', ch: ch, from: from, subject: subject, body: body, title: title, flags: Array.prototype.slice.call(arguments, 5) }); }
+
+/* ---------- SCAMS (60) ---------- */
+P('Email', 'Bakers’ Supply Co. Accounts', '<mark>OVERDUE</mark>: Invoice 4471. Pay <mark>today</mark>.', 'Your payment is 14 days late. <mark>Open the attached invoice and pay today or your account will be suspended.</mark> Attachment: <mark>Invoice_4471.zip</mark>', 'Phish. Urgency and a threat.', 'Pressure words like “today” and “suspended” push you to act before thinking.', 'A .zip file is an unusual way to send an invoice.', 'Check with the supplier on a number you already have.');
+P('Text message', 'ParcelPoint', '', 'Your parcel is on hold. <mark>Pay a £1.45 redelivery fee</mark> at <mark>parcelpoint-redeliver.example</mark> within 12 hours.', 'Phish. A small fee and a link.', 'Tiny fees are used to collect card details.', 'The web address is not the courier’s own site.', 'A 12-hour deadline creates pressure.');
+P('Email', 'IT Helpdesk', 'Your password <mark>expires in 1 hour</mark>', 'To keep your account active, <mark>sign in now</mark> using the link below. Thank you for your cooperation.', 'Phish. Perfect English does not mean safe.', 'A one-hour deadline is designed to rush you.', 'AI makes scam emails read perfectly, so typos are no longer a reliable sign.', 'Go to the company site yourself instead of using the link.');
+P('Email', 'Director (via free webmail address)', 'Are you free? Quick favour', 'Hi, I am in a meeting and cannot talk. <mark>I need you to buy gift cards for a client today</mark> and send me the codes. <mark>Please keep this between us.</mark>', 'Phish. Gift cards and secrecy.', 'Real managers do not ask for gift card codes by email.', 'Secrecy stops you checking with anyone.', 'A free webmail address, not the company’s own.');
+P('QR code', '', '', 'A sticker on a parking pay machine reads “Scan to pay, Bay 14”. <mark>Its edge is peeling and the original sign is visible underneath.</mark>', 'Phish. A sticker placed over the real one.', 'Criminals stick fake codes over real ones.', 'Scanning hides the web address until the page loads.', 'Use the operator’s own app or type the address yourself.');
+P('Text message', 'Tax Office', '', 'You are owed a refund of £312.40. <mark>Claim within 24 hours</mark> at <mark>taxrefund-claim.example</mark> or it will be cancelled.', 'Phish. A refund with a deadline.', 'Tax offices do not send refund links by text.', 'Free money plus a deadline is a classic pairing.', 'Log in through the official site you type yourself.');
+P('Text message', 'Your bank', '', '<mark>Suspicious payment of £850 detected.</mark> <mark>Move your money to a new safe account</mark> using the link now.', 'Phish. No bank asks you to move money.', 'A real bank never asks you to transfer money to a “safe account”.', 'The fear of losing money makes people act fast.', 'Call the number printed on your card instead.');
+P('Phone call', 'Caller: “Tech Support”', '', 'Hello, we have detected a virus on your computer. <mark>Please install this support tool so I can fix it</mark> and <mark>read me the code it shows</mark>.', 'Phish. An unexpected call about a virus.', 'Companies do not phone you about viruses.', 'The code gives the caller control of your computer.', 'Hang up. You can always call back on a number you trust.');
+P('Email', 'Managing Director (company address, but Reply-To differs)', 'Supplier bank details have changed', 'Please <mark>pay the new invoice to our updated account today</mark>. <mark>I am travelling and cannot be called.</mark>', 'Phish. Changed bank details and no way to call.', 'Changed bank details are a classic business fraud.', '“Cannot be called” blocks verification.', 'Confirm any change by phone with a known contact.');
+P('Email', 'HR Department', 'Updated payroll policy: <mark>sign in to view</mark>', 'Please <mark>log in with your work email and password</mark> to read the new payroll policy. <mark>Access will close at 5pm.</mark>', 'Phish. A login page for a document.', 'You should not need to enter a password to read a policy.', 'The 5pm deadline adds pressure.', 'Open the intranet yourself instead of using the link.');
+P('Email', 'Colleague (name you know)', 'Salary review 2026', 'Sharing the <mark>salary review spreadsheet</mark> with you. <mark>Sign in with your email to open it.</mark>', 'Phish. Curiosity is the hook.', 'Salary information is tempting to open.', 'The sign-in prompt steals your login.', 'Ask the colleague in person whether they sent it.');
+P('Social message', 'A friend’s account', '', '<mark>Is this you in this video??</mark> <mark>bit.ly/xyz-video</mark> I cannot believe it.', 'Phish. A hijacked friend account.', 'The message plays on shock and curiosity.', 'Shortened links hide the real destination.', 'Check with your friend through a different channel.');
+P('Email', 'Rewards Team', '<mark>You have won</mark> a £500 voucher', 'Congratulations! <mark>You were selected</mark>. Enter your card details to <mark>cover a £2.99 delivery fee</mark>.', 'Phish. You cannot win a prize you did not enter.', 'Unexpected prizes are bait.', 'A small “delivery fee” collects card details.');
+P('Text message', 'Unknown number', '', '<mark>Hi Mum, I lost my phone, this is my new number.</mark> <mark>Can you transfer me £480 for a bill</mark>? I will pay you back.', 'Phish. The “new number” scam.', 'It copies a family relationship to lower your guard.', 'Money is requested straight away.', 'Phone the person on their old number to check.');
+P('Social message', 'A stranger', '', 'Hi, I help people <mark>double their money with crypto</mark>. Start with £200 and <mark>I guarantee returns</mark>.', 'Phish. Guaranteed returns do not exist.', 'No honest investment guarantees profit.', 'Contact from a stranger is a warning sign.');
+P('Email', 'Recruiter', 'Job offer: £42,000, start Monday', 'Great news, you are hired without interview! <mark>Pay £90 for your background check and equipment</mark> first.', 'Phish. A job that asks you to pay.', 'Real employers do not charge you to hire you.', 'Hiring with no interview is suspicious.');
+P('Social message', 'Recruiter on a networking site', '', 'We loved your profile. Please <mark>download this assessment file (Assessment.exe)</mark> and run it before we proceed.', 'Phish. An .exe sent as a test.', 'Never run a program sent by a stranger.', 'Real assessments use websites, not .exe files.');
+P('Web pop-up', 'Your browser', '', '<mark>Your browser is out of date.</mark> <mark>Download the update now</mark> to stay protected. [Update]', 'Phish. A fake update prompt.', 'Browsers update themselves from their settings.', 'A pop-up on a website is not your browser speaking.');
+P('Email', 'Billing Team', 'Receipt: £499.99 charged', 'Your subscription has renewed for £499.99. <mark>If you did not make this purchase, call us immediately on 0800 000 000</mark>.', 'Phish. A scary charge and a number to call.', 'The phone number leads to the scammer.', 'If you never subscribed, you can ignore it or check your bank directly.');
+P('Email', 'Accounts (known supplier name)', 'Change of bank details', 'From next month <mark>please use our new account number</mark>. Details attached in the <mark>.docm</mark> file.', 'Phish. A .docm file asks for macros.', 'Macro-enabled documents can run hidden code.', 'Bank changes need phone confirmation.');
+P('Phone prompt', 'Login approval', '', 'Your phone buzzes with <mark>five approval requests in a row</mark> that you did not start. A text then says: <mark>“Tap Approve to stop the alerts.”</mark>', 'Phish. MFA fatigue.', 'Someone has your password and keeps trying.', 'Never approve a prompt you did not start.', 'Report it and change your password.');
+P('Phone call', 'Caller: “Bank fraud team”', '', 'We have blocked a fraudulent payment. <mark>To cancel it, tell me the six-digit code we just texted you.</mark>', 'Phish. Never read out a code.', 'That code approves the criminal’s own payment.', 'Real banks never ask for codes by phone.');
+P('Found item', 'USB stick', '', 'A USB drive in the car park is labelled <mark>“Payroll 2026 – confidential”</mark>. A colleague says: “Plug it in and see whose it is.”', 'Phish. A baited USB stick.', 'Curiosity is the trap.', 'Plugging it in can install malware.', 'Hand it to IT without plugging it in.');
+P('Wi-Fi', 'Free_Airport_WiFi', '', 'A login page for free Wi-Fi asks for <mark>your email address and your normal email password</mark>.', 'Phish. Wi-Fi never needs your password.', 'Fake hotspots copy real names.', 'Use mobile data or a VPN instead.');
+P('Email', 'Account Security', '<mark>Reset your password</mark>', 'We received a request to reset your password. <mark>Click here to confirm</mark> or your account will be locked. You did not make this request.', 'Phish. A reset you never requested.', 'Resetting should only happen when you ask.', 'Go to the site directly and check your account.');
+P('Email', 'Voicemail Service', 'You have a new voicemail', 'You have received a voicemail. <mark>Open the attached voicemail.html</mark> to listen.', 'Phish. Voicemails are not .html files.', 'A web file attached to an email can show a fake login page.', 'Ask the person who left it to call you back.');
+P('Email', 'e-Sign Service', 'Please review and sign', 'A document is waiting. <mark>Click here to review</mark>. This request came from <mark>sign-docs@docs-review.example</mark>.', 'Phish. A strange sending domain.', 'The address does not match the service.', 'Open the real service yourself and check.');
+P('Email', 'Disaster Relief Fund', 'Urgent appeal', 'Thousands are in need. <mark>Donate now through this link</mark> and <mark>we accept gift cards</mark>.', 'Phish. A fake charity.', 'Scammers use news events.', 'Gift cards cannot be traced.', 'Donate through the charity’s own website.');
+P('Email', 'Energy Provider', 'Refund of £187 pending', 'You are due a refund. <mark>Enter your bank details here</mark> within 48 hours.', 'Phish. A refund that asks for details.', 'Refunds do not need your full bank details.', 'The 48-hour deadline is pressure.');
+P('Text message', 'Council', '', '<mark>Council tax rebate:</mark> you qualify for £150. <mark>Apply here: counciltax-rebate.example</mark>.', 'Phish. A rebate link.', 'Councils tell you through official letters or websites.', 'The link is not a council address.');
+P('Marketplace', 'Buyer', '', 'I will buy it now but <mark>I accidentally overpaid by £200</mark>. <mark>Send the difference and a verification code</mark> I will text you.', 'Phish. The overpayment trick.', 'The payment is fake or will be reversed.', 'The code lets them take over your account.');
+P('Email', 'Landlord', 'New account for rent', '<mark>Please pay this month’s rent into my new account</mark>. The old one has been closed.', 'Phish. A changed account, no call.', 'Always confirm changes by phone.', 'Landlord emails can be hacked.');
+P('Email', 'Solicitor', 'Completion funds', 'Please send the deposit <mark>to the account below by 3pm</mark>. <mark>Our usual account is under review.</mark>', 'Phish. Property payment fraud.', 'Huge sums and tight deadlines are a target.', 'Phone the firm on a number you already hold.');
+P('Text message', 'Student Finance', '', '<mark>Your student loan payment failed.</mark> Update your details at <mark>studentloan-update.example</mark>.', 'Phish. A failed payment link.', 'Official bodies send you to a known website.', 'Check your account by typing the address yourself.');
+P('Email', 'Antivirus Team', '<mark>Your protection expires today</mark>', 'Renew for £39.99 now. <mark>Click to keep your computer safe.</mark>', 'Phish. A fake renewal.', 'Real antivirus tells you inside its own app.', 'Urgency and a payment link.');
+P('Messaging app', 'Unknown number using the CEO’s photo', '', 'This is the CEO. <mark>I am in a meeting, this is my new number.</mark> <mark>Buy five gift cards quietly.</mark>', 'Phish. A CEO impersonation.', 'A familiar photo is easy to copy.', 'Secret requests for gift cards are a red flag.');
+P('Text message', 'DeliveryNow', '', '<mark>Unable to deliver, address incomplete.</mark> Update at <mark>deliverynow-address.example</mark> within 6 hours.', 'Phish. A delivery link.', 'Delivery texts are often fake.', 'Use the courier’s app or official site.');
+P('Email', 'Security Team', '<mark>Account locked</mark>: suspicious sign-in', 'We locked your account. <mark>Verify now</mark> using the button below.', 'Phish. A button that steals logins.', 'The button leads to a fake sign-in page.', 'Open the service yourself and check.');
+P('Email', 'Hotel Booking', 'Confirm your reservation', 'To keep your booking, <mark>verify your card at this link within 2 hours</mark>.', 'Phish. A reservation scam.', 'Hotels rarely ask for card checks by link.', 'Contact the hotel using its own website number.');
+P('Social message', 'Ticket seller', '', 'Last two festival tickets, face value. <mark>Pay by bank transfer to secure them.</mark> <mark>No refunds.</mark>', 'Phish. Fake tickets.', 'Bank transfer gives you no protection.', 'Use official resale sites.');
+P('Social message', 'A friend’s account', '', 'Hey, <mark>check out this photo of us</mark>: <mark>photos-share.example/ab12</mark>', 'Phish. A hacked friend.', 'The message is vague.', 'The link is not a photo service you use.');
+P('Email', 'Secure Mail', 'Scan to view secure document', '<mark>Scan the QR code below</mark> with your phone to read the confidential file. The code is in the email body as an image.', 'Phish. Quishing.', 'QR codes in emails bypass link checks.', 'Your phone is less protected than your work computer.');
+P('Poster', 'A restaurant table', '', 'The table QR menu has <mark>a sticker on top</mark> and the page asks you to <mark>enter your card number to see the menu</mark>.', 'Phish. A menu never needs card details.', 'A menu is free to view.', 'The sticker may cover the real code.');
+P('Email', 'Known supplier (thread continues)', 'Re: Re: Order 8821', 'Following on from our thread, <mark>please update the bank details</mark> on your records. <mark>This is urgent.</mark>', 'Phish. A hijacked email thread.', 'A familiar thread makes it feel safe.', 'The request to change bank details is the giveaway.');
+P('Email', 'Mail Admin', '<mark>Your mailbox is full</mark>', 'Your mailbox has reached its limit. <mark>Click here to increase storage</mark> or messages will be deleted.', 'Phish. A storage warning.', 'IT does not warn like this.', 'The link leads to a fake login.');
+P('Text message', 'Payments', '', '<mark>Payment of £289 to “ShopGlobal”.</mark> If this was not you, <mark>reply STOP or tap the link</mark>.', 'Phish. A payment you never made.', 'The alarm makes you click.', 'Check your banking app instead.');
+P('Email', 'Hiring Team', 'Interview invitation', 'Please install <mark>this meeting app</mark> from the link before your interview tomorrow.', 'Phish. A fake meeting app.', 'Use the platform the company already named.', 'The download could be malware.');
+P('Email', 'Insurance', 'Your quote is ready', '<mark>Open the attachment to see your quote</mark>. You did not request a quote.', 'Phish. Unrequested.', 'You never asked for a quote.', 'Attachments are the delivery method.');
+P('Phone call', 'Caller: “Police fraud squad”', '', 'Your account has been used by criminals. <mark>Withdraw your cash and hand it to our officer</mark> to keep it safe.', 'Phish. The police never ask this.', 'Real police never ask you to move or hand over money.', 'Hang up and call 101 or 999.');
+P('Text message', 'Unknown number', '', 'Hi, is this Alex? <mark>Sorry, wrong number!</mark> <mark>You seem nice though, want to chat?</mark>', 'Phish. A wrong-number opener.', 'It starts a friendship that later asks for money.', 'Do not reply to unknown numbers.');
+P('Email', 'Accounts (known vendor name)', 'Invoice 7712', 'Please pay. <mark>Reply-To address is different from the sender</mark>.', 'Phish. A hidden reply address.', 'Replies go to the criminal.', 'Check the full address before replying.');
+P('Email', 'Router Support', 'Firmware update required', '<mark>Your router is at risk.</mark> Download the update from this link and run it.', 'Phish. Not how routers update.', 'Routers update through their own settings page.', 'The file may be malware.');
+P('Web page', 'Free PDF converter', '', 'The page offers a free tool and asks you to <mark>add a browser extension that can read all websites</mark>.', 'Phish. A risky extension.', 'Extensions can steal passwords.', 'Use known tools only.');
+P('Text message', 'Age Check', '', '<mark>Verify your age to continue using your account.</mark> Tap the link and enter your card.', 'Phish. Not how age checks work.', 'Age checks do not need your card details here.', 'The link is the trap.');
+P('Email', 'Compliance Team', 'Training overdue', 'Complete this training <mark>now or your access will be suspended</mark>. <mark>Sign in using the link.</mark>', 'Phish. Training that steals logins.', 'Real training is on your learning portal.', 'Threats of suspension push you to hurry.');
+P('Phone call', 'Caller: “Support desk”', '', 'To fix your account, <mark>open this remote-access tool and give me the code</mark> it shows.', 'Phish. Remote access.', 'The code hands over your computer.', 'Real IT uses their own approved tools.');
+P('Email', 'Voice Service', 'Message transcript', 'The transcript is <mark>attached as a link</mark>. <mark>Sign in to read.</mark>', 'Phish. A voicemail login.', 'No transcript needs a password.', 'The link is a fake sign-in.');
+P('Email', 'Tax Office', 'Final notice', '<mark>Pay immediately to avoid legal action.</mark> <mark>Click here</mark>.', 'Phish. Threats of action.', 'Real notices come by post or official accounts.', 'Fear is the lever.');
+P('Email', 'Cloud Storage', '<mark>Your photos will be deleted</mark>', 'Upgrade storage <mark>within 24 hours</mark> to keep them. Pay here.', 'Phish. A storage scare.', 'The deadline is invented.', 'Check inside your real storage app.');
+P('Email', 'Customer (new contact)', 'Order enquiry', 'Please see our order list in the attached <mark>Order_List.iso</mark> file. <mark>We need a quote today.</mark>', 'Phish. An unusual file type.', 'Disk image files like .iso are rarely used for order lists.', 'A new contact asking for urgent action is a warning sign.');
+
+/* ---------- GENUINE (40) ---------- */
+L('Email', 'Priya (Operations), priya@yourcompany.example', 'Team meeting moved to 3pm', 'Hi all, the team meeting has moved to 3pm today. Same room, same agenda.', 'Legit. Nothing is being asked.', 'A known colleague at your own address.', 'No link, attachment or request for money.', 'If unsure, ask in person.');
+L('Text message', 'Your bank (saved contact)', '', 'Your one-time code is 482913. <b>Never share it.</b> If you did not request it, call the number on your card.', 'Legit, if you just logged in.', 'It asks for nothing and warns you not to share.', 'If you did not just log in, someone has your password: call the bank.', 'Never read a code to a caller.');
+L('Email', 'Orders, shop you bought from', 'Your order is confirmed', 'Thanks for your order placed 10 minutes ago. Delivery is expected on Friday. View your order in your account.', 'Legit. You were expecting it.', 'It matches something you did.', 'No urgency or attachment.', 'Still type the site address yourself.');
+L('Text message', 'Dental practice', '', 'Reminder: your check-up is Tuesday 10:00. Reply C to cancel.', 'Legit. A routine reminder.', 'You booked it.', 'No links or payments.');
+L('Text message', 'Courier app', '', 'Your parcel will arrive between 2 and 4pm. Track it in the app.', 'Legit. No link and no fee.', 'It matches an order you made.', 'It points to an app, not a link.');
+L('Email', 'Account Service', 'Reset your password', 'You asked to reset your password a minute ago. The link works for 30 minutes. If this was not you, ignore this message.', 'Legit. You started it.', 'You requested it seconds ago.', 'It tells you to ignore it if unsolicited.');
+L('Email', 'Newsletter you subscribed to', 'This week in cooking', 'Five quick dinners. Unsubscribe at the bottom.', 'Legit. A subscription you chose.', 'You signed up.', 'No threats or deadlines.');
+L('Email', 'IT Team', 'Scheduled maintenance Sunday 2am', 'Systems will be unavailable for two hours. No action is needed.', 'Legit. No action needed.', 'No link or login.', 'It matches normal IT notices.');
+L('Email', 'Payroll', 'Your payslip is available', 'Your payslip is ready. Log in to the payroll portal as usual to view it.', 'Legit. No link to click.', 'It points you to a site you already use.', 'Nothing is demanded.');
+L('Email', 'Shop receipt', 'Receipt for £14.99', 'Thank you for shopping. Your receipt is below. No action needed.', 'Legit. A receipt.', 'You made the purchase.', 'No threats.');
+L('Email', 'Rail company', 'Your e-ticket', 'Your e-ticket for Thursday 08:12 is attached. Show it at the gate.', 'Legit. You booked it.', 'It matches your booking.', 'An expected attachment.');
+L('Email', 'A friend you spoke to', 'The photos from Saturday', 'Here are the photos we talked about!', 'Legit. Expected and personal.', 'You spoke earlier.', 'It fits the conversation.');
+L('Email', 'Your manager', 'Quick chat tomorrow?', 'Can we catch up in person tomorrow at 10? Nothing urgent.', 'Legit. No pressure.', 'In person, not secret.', 'No request for money.');
+L('Email', 'Known supplier', 'Invoice 8810 for PO 4417', 'Invoice attached for the order you placed last week. Bank details are unchanged.', 'Legit. It matches an order.', 'It matches a purchase order.', 'Bank details unchanged.');
+L('Email', 'App you use', 'New sign-in on your account', 'We noticed a sign-in from a laptop in Manchester just now. If it was you, no action is needed.', 'Legit, if it was you.', 'It matches what you just did.', 'No link demanded.');
+L('Email', 'HR', 'Reminder: read the updated policy on the intranet', 'The policy is on the intranet under Policies.', 'Legit. No link to click.', 'It points you to a known place.');
+L('Text message', 'GP surgery', '', 'Your appointment is Tuesday 10:00. Reply C to cancel.', 'Legit. You booked it.', 'No link, no payment.');
+L('Email', 'Your bank', 'Your statement is ready', 'Log in through the app to view your statement.', 'Legit. Points to the app.', 'No link.');
+L('Email', 'Colleague', 'Notes from today’s meeting', 'Notes are on the team wiki you already use.', 'Legit. Known place.', 'No sign-in prompt.');
+L('Email', 'Local library', 'Items due soon', 'Two books are due on Friday. Renew in your account.', 'Legit. Routine.', 'No threat.');
+L('Email', 'Streaming service you use', 'Your renewal is next week', 'Your plan renews at £9.99. Manage it in your account settings.', 'Legit. Correct amount.', 'It matches your plan.');
+L('Email', 'Charity you gave to', 'Thank you', 'Thank you for your donation last month.', 'Legit. A thank-you.', 'No ask.');
+L('Email', 'Ticket seller', 'Your tickets', 'Your tickets for Saturday are attached.', 'Legit. You bought them.', 'It matches your purchase.');
+L('Email', 'School', 'Newsletter', 'Term dates and the next trip.', 'Legit. A newsletter.', 'No ask.');
+L('Email', 'Recruiter you contacted', 'Interview on Thursday 10am', 'Confirming your interview at our Manchester office.', 'Legit. You applied.', 'It matches your application.');
+L('App', 'Your phone', '', 'A software update is ready. Install it from Settings tonight.', 'Legit. From the system.', 'Delivered inside the phone.');
+L('Email', 'Airline', 'Check-in opens tomorrow', 'Check in through the app.', 'Legit. You booked a flight.', 'No link.');
+L('Email', 'IT Helpdesk', 'Re: Ticket 1042', 'Your laptop is ready for collection.', 'Legit. You raised a ticket.', 'It matches your request.');
+L('Email', 'Utility company', 'Submit your meter reading', 'Add it in your online account.', 'Legit. Routine.', 'Points to your account.');
+L('Email', 'Account Service', 'Two-step login turned on', 'You enabled two-step login today.', 'Legit. You did it.', 'It matches an action.');
+L('Email', 'Mobile provider', 'Your bill is ready', 'View it in the app.', 'Legit. Routine.', 'Points to the app.');
+L('Email', 'Landlord', 'Repair visit Wednesday', 'A plumber will visit Wednesday morning, as you requested.', 'Legit. You asked.', 'It matches your request.');
+L('Email', 'Streaming service', 'Receipt', 'Thanks for your payment of £9.99.', 'Legit. A receipt.', 'You pay it every month.');
+L('Text message', 'Council', '', 'Bin collection moves to Saturday due to the bank holiday.', 'Legit. Information only.', 'No link or ask.');
+L('Text message', 'Service you just joined', '', 'Your verification code is 771204.', 'Legit, if you just signed up.', 'It matches what you did.', 'Never share it.');
+L('Email', 'Gym', 'Class booked', 'Your Tuesday class is confirmed.', 'Legit. You booked.', 'No ask.');
+L('Email', 'Colleague (auto-reply)', 'Out of office', 'I am out until Monday. For urgent matters, contact the team.', 'Legit. An automatic reply.', 'No request.');
+L('Text message', 'Pharmacy', '', 'Your prescription is ready to collect.', 'Legit. Expected.', 'No link.');
+L('Email', 'Tenant portal', 'Rent receipt', 'Rent received. Thank you.', 'Legit. A receipt.', 'You paid it.');
+L('Email', 'Team lead', 'Lunch Friday?', 'Team lunch at 12:30 on Friday if you can make it.', 'Legit. Ordinary.', 'No link.');
+
+var CTX = {
+  'Email': ['Email phishing', 'Attackers send emails that look like they come from a supplier, a boss or a service you use. The aim is to make you click a link, open a file, enter a password or pay money. Genuine businesses email too, so the skill is checking what the message asks you to do.'],
+  'Text message': ['Smishing (phishing by text)', 'Texts feel personal and urgent, and links in them are short and hard to judge. Scammers pretend to be a courier, bank or tax office. Real organisations text too, so check what the text asks for and never trust a link you did not expect.'],
+  'Phone call': ['Vishing (phishing by voice)', 'Callers can fake the number on your screen and sound calm and official. They ask for codes, payments or remote access. A real organisation will always let you hang up and call back on a number you already trust.'],
+  'QR code': ['Quishing (QR code phishing)', 'You cannot read the address hidden in a QR code before you scan it. Criminals stick fake codes over real ones or send them in emails, because email filters often cannot read them.'],
+  'Poster': ['Quishing (QR code phishing)', 'You cannot read the address hidden in a QR code before you scan it. Criminals stick fake codes over real ones, so a code in public is not automatically safe.'],
+  'Social message': ['Social media and chat scams', 'Scammers use fake or hijacked accounts to build trust, then ask you to click, invest or send money. A message from a friend’s account can still come from a criminal.'],
+  'Messaging app': ['Impersonation by messaging app', 'A message from a new number uses a familiar photo or name, such as your boss or a family member, to get quick money or gift cards.'],
+  'Web pop-up': ['Fake website pop-ups', 'Websites can show pop-ups that look like warnings from your computer. They push you to download malware or call a fake support number.'],
+  'Web page': ['Risky websites and extensions', 'Free tools and converters can ask for permissions that let them read everything you do in your browser, including passwords.'],
+  'Wi-Fi': ['Fake Wi-Fi (evil twin)', 'Criminals set up a hotspot with a believable name. Anything you type on its login page, such as a password, goes straight to them.'],
+  'Found item': ['Baiting', 'Attackers leave a tempting item, such as a USB stick marked “confidential”, and rely on curiosity. Plugging it in can install malware.'],
+  'Marketplace': ['Marketplace and overpayment scams', 'Fake buyers and sellers use fake payments, overpayments and requests for verification codes to take your money or account.'],
+  'Phone prompt': ['MFA fatigue', 'Someone who already has your password keeps triggering login approval prompts until the victim taps Approve to make them stop.'],
+  'App': ['Notifications on your device', 'Alerts that come from your phone or apps. Only trust ones that appear inside the device or app itself.']
+};
+
+/* ---------- GAME ---------- */
+var ROUND = 8, PHISH_PER = 5;
+var order = [], pos = 0, score = 0, locked = false, seen = {};
+var $ = function (id) { return document.getElementById(id); };
+try { seen = JSON.parse(localStorage.getItem('phishSeen') || '{}') || {}; } catch (e) { seen = {}; }
+function save() { try { localStorage.setItem('phishSeen', JSON.stringify(seen)); } catch (e) {} }
+function shuffle(a) { for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+function pool(kind) { var r = []; for (var i = 0; i < BANK.length; i++) { if (BANK[i].a === kind && !seen[i]) r.push(i); } return r; }
+function newRound() {
+  var p = pool('phish'), l = pool('legit');
+  if (p.length < PHISH_PER || l.length < ROUND - PHISH_PER) { seen = {}; p = pool('phish'); l = pool('legit'); }
+  order = shuffle(p).slice(0, PHISH_PER).concat(shuffle(l).slice(0, ROUND - PHISH_PER));
+  shuffle(order);
+  for (var i = 0; i < order.length; i++) seen[order[i]] = 1;
+  save();
+  pos = 0; score = 0;
+  var n = 0; for (var k in seen) n++;
+  $('seen').textContent = 'Questions used so far: ' + n + ' of ' + BANK.length + '. Rounds do not repeat until the bank is used up.';
+}
+function render() {
+  var q = BANK[order[pos]]; locked = false;
+  $('count').textContent = (pos + 1) + ' / ' + ROUND; $('fill').style.width = (pos / ROUND * 100) + '%';
+  $('score').textContent = score + ' correct';
+  var h = '<div class="ch">' + q.ch + '</div>';
+  if (q.ch === 'QR code' || q.ch === 'Poster') {
+    h += '<div class="sticker"><strong>' + (q.ch === 'QR code' ? 'A QR code' : 'A printed code') + '</strong>' + q.body + '</div>';
+  } else {
+    if (q.from) h += '<div class="row"><b>From</b><span>' + q.from + '</span></div>';
+    if (q.subject) h += '<div class="row"><b>Subject</b><span>' + q.subject + '</span></div>';
+    if (q.from || q.subject) h += '<hr>';
+    h += '<p class="body">' + q.body + '</p>';
+  }
+  var c = CTX[q.ch] || [q.ch, 'Read the message and decide whether it is genuine.'];
+  $('ctx').innerHTML = '<div class="tag">' + c[0] + '</div><p>' + c[1] + '</p>';
+  var m = $('msg'); m.className = 'msg'; m.innerHTML = h;
+  $('result').hidden = true; $('next').hidden = true;
+  $('bPhish').disabled = false; $('bLegit').disabled = false; $('bPhish').className = ''; $('bLegit').className = '';
+}
+function answer(a) {
+  if (locked) return; locked = true;
+  var q = BANK[order[pos]], ok = (a === q.a); if (ok) score++;
+  $('score').textContent = score + ' correct';
+  $('msg').className = 'msg shown';
+  var picked = a === 'phish' ? 'bPhish' : 'bLegit', other = a === 'phish' ? 'bLegit' : 'bPhish';
+  $(other).disabled = true; $(picked).className = 'picked';
+  var r = $('result'); r.hidden = false; r.className = 'result ' + (ok ? 'ok' : 'bad');
+  r.innerHTML = '<h2>' + (ok ? 'Correct. ' : 'Not quite. ') + q.title + '</h2><ul>' + q.flags.map(function (f) { return '<li>' + f + '</li>'; }).join('') + '</ul>';
+  var n = $('next'); n.hidden = false; n.textContent = pos === ROUND - 1 ? 'See my result' : 'Next message'; n.focus();
+}
+function finish() {
+  $('game').hidden = true; $('end').hidden = false; $('fill').style.width = '100%';
+  $('final').textContent = score + ' / ' + ROUND;
+  $('verdict').textContent = score >= ROUND - 1 ? 'Sharp. You spotted nearly all of them.' : score >= 5 ? 'Good. The ones you missed are the realistic ones.' : 'This is normal. These are designed to catch people out, which is why training and layered defences both matter.';
+}
+$('bPhish').onclick = function () { answer('phish'); };
+$('bLegit').onclick = function () { answer('legit'); };
+$('next').onclick = function () { if (pos < ROUND - 1) { pos++; render(); } else finish(); };
+$('again').onclick = function () { $('end').hidden = true; $('game').hidden = false; newRound(); render(); };
+newRound(); render();
+
+/* Falling-code backdrop. Static single frame when the viewer prefers reduced motion. */
+(function () {
+  var c = document.getElementById('rain'); if (!c) return;
+  var x = c.getContext('2d'), size = 16, cols = [], chars = '01{}<>/;=$#%&*+-';
+  var still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function fit() {
+    c.width = window.innerWidth; c.height = window.innerHeight;
+    var n = Math.ceil(c.width / size); cols = [];
+    for (var i = 0; i < n; i++) cols.push(Math.floor(Math.random() * c.height / size));
+    x.clearRect(0, 0, c.width, c.height);
+  }
+  function step() {
+    x.globalCompositeOperation = 'destination-out'; x.fillStyle = 'rgba(0,0,0,0.09)'; x.fillRect(0, 0, c.width, c.height); x.globalCompositeOperation = 'source-over';
+    x.font = size + 'px monospace';
+    for (var i = 0; i < cols.length; i++) {
+      var ch = chars.charAt(Math.floor(Math.random() * chars.length));
+      x.fillStyle = Math.random() > 0.97 ? '#ff8a1f' : '#2dff73';
+      x.fillText(ch, i * size, cols[i] * size);
+      if (cols[i] * size > c.height && Math.random() > 0.975) cols[i] = 0;
+      cols[i]++;
+    }
+  }
+  fit(); window.addEventListener('resize', fit);
+  if (still) { for (var k = 0; k < 40; k++) step(); return; }
+  setInterval(function () { if (!document.hidden) step(); }, 70);
+})();
+</script>
+
+</body>
+</html>
